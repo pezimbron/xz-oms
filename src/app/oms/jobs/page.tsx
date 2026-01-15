@@ -23,11 +23,12 @@ interface Job {
 }
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  request: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
   scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  'in-progress': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-  completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  scanned: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  qc: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+  done: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  archived: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
 }
 
 const regionColors = {
@@ -43,14 +44,26 @@ export default function JobsListPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [regionFilter, setRegionFilter] = useState<string>('all')
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
+    fetchUser()
     fetchJobs()
   }, [])
 
+  const fetchUser = async () => {
+    try {
+      const response = await fetch('/api/users/me')
+      const data = await response.json()
+      setUser(data.user)
+    } catch (error) {
+      console.error('Error fetching user:', error)
+    }
+  }
+
   const fetchJobs = async () => {
     try {
-      const response = await fetch('/api/jobs?limit=1000&depth=1')
+      const response = await fetch('/api/jobs?limit=1000&depth=2')
       const data = await response.json()
       setJobs(data.docs || [])
     } catch (error) {
@@ -60,7 +73,15 @@ export default function JobsListPage() {
     }
   }
 
-  const filteredJobs = jobs.filter((job) => {
+  // Filter jobs based on user role
+  const roleFilteredJobs = user?.role === 'tech' 
+    ? jobs.filter((job) => {
+        const techId = typeof job.tech === 'object' ? job.tech?.id : job.tech
+        return techId === user.id
+      })
+    : jobs
+
+  const filteredJobs = roleFilteredJobs.filter((job) => {
     const matchesSearch = 
       job.jobId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.modelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -96,22 +117,26 @@ export default function JobsListPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Jobs</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Manage all jobs and assignments
+                Manage and track all your jobs
               </p>
             </div>
-            <div className="flex gap-3">
-              <Link
-                href="/oms/calendar"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <span>📅</span> Calendar View
-              </Link>
-              <Link
-                href="/oms/quick-create"
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <span>⚡</span> Quick Create
-              </Link>
+            <div className="relative">
+              <div className="flex gap-2">
+                <Link
+                  href="/oms/quick-create"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <span className="text-xl">+</span>
+                  Quick Create
+                </Link>
+                <Link
+                  href="/admin/collections/jobs/create"
+                  className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <span className="text-xl">+</span>
+                  Manual Create
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -173,13 +198,10 @@ export default function JobsListPage() {
               <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Job ID
+                    Client
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Model
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Client
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Location
@@ -192,6 +214,9 @@ export default function JobsListPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Workflow
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Region
@@ -209,68 +234,95 @@ export default function JobsListPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredJobs.map((job) => (
-                    <tr
-                      key={job.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                      onClick={() => window.location.href = `/oms/jobs/${job.id}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {job.jobId || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {job.modelName || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {job.client?.name || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {job.city || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {job.targetDate ? new Date(job.targetDate).toLocaleDateString() : 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {job.tech?.name || (
-                            <span className="text-gray-400 dark:text-gray-500 italic">Unassigned</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[job.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
-                          {job.status || 'pending'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${regionColors[job.region as keyof typeof regionColors] || 'bg-gray-500'}`}></div>
-                          <span className="text-sm text-gray-900 dark:text-white capitalize">
-                            {job.region?.replace('-', ' ') || 'other'}
+                  filteredJobs.map((job) => {
+                    const workflowType = (job as any).workflowType
+                    const workflowSteps = (job as any).workflowSteps || []
+                    const completedSteps = workflowSteps.filter((step: any) => step.completed).length
+                    const totalSteps = workflowSteps.length
+                    const workflowPercentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
+                    const hasWorkflow = workflowType || totalSteps > 0
+
+                    return (
+                      <tr
+                        key={job.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        onClick={() => window.location.href = `/oms/jobs/${job.id}`}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white font-medium">
+                            {job.client?.name || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {job.modelName || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {job.city || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {job.targetDate ? new Date(job.targetDate).toLocaleDateString() : 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {job.tech?.name || (
+                              <span className="text-gray-400 dark:text-gray-500 italic">Unassigned</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[job.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+                            {job.status || 'pending'}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link
-                          href={`/oms/jobs/${job.id}`}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {hasWorkflow ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 min-w-[80px]">
+                                <div
+                                  className={`h-2 rounded-full transition-all ${
+                                    workflowPercentage === 100
+                                      ? 'bg-green-500'
+                                      : workflowPercentage >= 50
+                                      ? 'bg-blue-500'
+                                      : 'bg-yellow-500'
+                                  }`}
+                                  style={{ width: `${workflowPercentage}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                {workflowPercentage}%
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400 dark:text-gray-500 italic">No workflow</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${regionColors[job.region as keyof typeof regionColors] || 'bg-gray-500'}`}></div>
+                            <span className="text-sm text-gray-900 dark:text-white capitalize">
+                              {job.region?.replace('-', ' ') || 'other'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <Link
+                            href={`/oms/jobs/${job.id}`}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

@@ -83,6 +83,73 @@ export const Clients: CollectionConfig = {
       },
     },
     {
+      name: 'defaultWorkflow',
+      type: 'select',
+      label: 'Default Workflow Type',
+      admin: {
+        description: 'Default workflow that will be assigned to new jobs for this client. Can be overridden per job.',
+      },
+      options: [
+        { label: 'Outsourced: Scan & Upload to Client', value: 'outsourced-scan-upload-client' },
+        { label: 'Outsourced: Scan & Transfer', value: 'outsourced-scan-transfer' },
+        { label: 'Outsourced: Scan, Survey & Images', value: 'outsourced-scan-survey-images' },
+        { label: 'Direct: Scan Hosted by Us', value: 'direct-scan-hosted' },
+        { label: 'Direct: Scan & Transfer', value: 'direct-scan-transfer' },
+        { label: 'Direct: Scan + Floor Plan', value: 'direct-scan-floorplan' },
+        { label: 'Direct: Scan + Floor Plan + Photos', value: 'direct-scan-floorplan-photos' },
+        { label: 'Direct: Scan + As-Builts', value: 'direct-scan-asbuilts' },
+      ],
+    },
+    {
+      name: 'invoicingPreferences',
+      type: 'group',
+      label: 'Invoicing Preferences',
+      fields: [
+        {
+          name: 'terms',
+          type: 'select',
+          label: 'Payment Terms',
+          defaultValue: 'net-30',
+          options: [
+            { label: 'Due on Receipt', value: 'due-on-receipt' },
+            { label: 'Net 15', value: 'net-15' },
+            { label: 'Net 30', value: 'net-30' },
+            { label: 'Net 45', value: 'net-45' },
+            { label: 'Net 60', value: 'net-60' },
+          ],
+          admin: {
+            description: 'Default payment terms for invoices',
+          },
+        },
+        {
+          name: 'batchDay',
+          type: 'number',
+          label: 'Batch Invoice Day',
+          admin: {
+            description: 'For weekly batch: 1=Monday, 7=Sunday. For monthly batch: day of month (1-31)',
+            condition: (data) => data.billingPreference === 'weekly-batch' || data.billingPreference === 'monthly-batch',
+          },
+        },
+        {
+          name: 'invoiceNotes',
+          type: 'textarea',
+          label: 'Default Invoice Notes',
+          admin: {
+            description: 'Notes that will appear on all invoices for this client',
+          },
+        },
+        {
+          name: 'autoApprove',
+          type: 'checkbox',
+          label: 'Auto-Approve Invoices',
+          defaultValue: false,
+          admin: {
+            description: 'Skip manual approval and automatically create draft invoices in QuickBooks',
+          },
+        },
+      ],
+    },
+    {
       name: 'integrations',
       type: 'group',
       label: 'External Integrations',

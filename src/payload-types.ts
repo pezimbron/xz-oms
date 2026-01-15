@@ -78,6 +78,7 @@ export interface Config {
     products: Product;
     equipment: Equipment;
     jobs: Job;
+    notifications: Notification;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -100,6 +101,7 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     equipment: EquipmentSelect<false> | EquipmentSelect<true>;
     jobs: JobsSelect<false> | JobsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -756,6 +758,39 @@ export interface Client {
    * Client-specific instructions that will auto-populate in the "General Instructions for Tech" field when this client is selected for a job. Use for recurring client requirements (e.g., "Always call POC 30 min before arrival").
    */
   instructionTemplate?: string | null;
+  /**
+   * Default workflow that will be assigned to new jobs for this client. Can be overridden per job.
+   */
+  defaultWorkflow?:
+    | (
+        | 'outsourced-scan-upload-client'
+        | 'outsourced-scan-transfer'
+        | 'outsourced-scan-survey-images'
+        | 'direct-scan-hosted'
+        | 'direct-scan-transfer'
+        | 'direct-scan-floorplan'
+        | 'direct-scan-floorplan-photos'
+        | 'direct-scan-asbuilts'
+      )
+    | null;
+  invoicingPreferences?: {
+    /**
+     * Default payment terms for invoices
+     */
+    terms?: ('due-on-receipt' | 'net-15' | 'net-30' | 'net-45' | 'net-60') | null;
+    /**
+     * For weekly batch: 1=Monday, 7=Sunday. For monthly batch: day of month (1-31)
+     */
+    batchDay?: number | null;
+    /**
+     * Notes that will appear on all invoices for this client
+     */
+    invoiceNotes?: string | null;
+    /**
+     * Skip manual approval and automatically create draft invoices in QuickBooks
+     */
+    autoApprove?: boolean | null;
+  };
   integrations?: {
     quickbooks?: {
       /**
@@ -838,7 +873,7 @@ export interface Job {
   jobId?: string | null;
   modelName: string;
   priority?: ('low' | 'normal' | 'high' | 'rush') | null;
-  status: 'scheduled' | 'scanned' | 'qc' | 'done' | 'archived';
+  status: 'request' | 'scheduled' | 'scanned' | 'qc' | 'done' | 'archived';
   /**
    * For outsourced jobs, this is the partner (e.g., Matterport). For direct jobs, this is the actual client.
    */
@@ -899,6 +934,34 @@ export interface Job {
   vendorPrice?: number | null;
   travelPayout?: number | null;
   offHoursPayout?: number | null;
+  /**
+   * The workflow process for this job. Defaults to client's default workflow but can be overridden.
+   */
+  workflowType?:
+    | (
+        | 'outsourced-scan-upload-client'
+        | 'outsourced-scan-transfer'
+        | 'outsourced-scan-survey-images'
+        | 'direct-scan-hosted'
+        | 'direct-scan-transfer'
+        | 'direct-scan-floorplan'
+        | 'direct-scan-floorplan-photos'
+        | 'direct-scan-asbuilts'
+      )
+    | null;
+  /**
+   * Track completion of workflow steps
+   */
+  workflowSteps?:
+    | {
+        stepName: string;
+        completed?: boolean | null;
+        completedAt?: string | null;
+        completedBy?: string | null;
+        notes?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   qcChecklist?: {
     accuracyOk?: boolean | null;
     coverageOk?: boolean | null;
@@ -908,6 +971,28 @@ export interface Job {
   totalPrice?: number | null;
   vendorCost?: number | null;
   margin?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  user: number | User;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read?: boolean | null;
+  /**
+   * Link to related job if applicable
+   */
+  relatedJob?: (number | null) | Job;
+  /**
+   * URL to navigate to when notification is clicked
+   */
+  actionUrl?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1051,6 +1136,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'jobs';
         value: number | Job;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1432,6 +1521,15 @@ export interface ClientsSelect<T extends boolean = true> {
   billingAddress?: T;
   notes?: T;
   instructionTemplate?: T;
+  defaultWorkflow?: T;
+  invoicingPreferences?:
+    | T
+    | {
+        terms?: T;
+        batchDay?: T;
+        invoiceNotes?: T;
+        autoApprove?: T;
+      };
   integrations?:
     | T
     | {
@@ -1544,6 +1642,17 @@ export interface JobsSelect<T extends boolean = true> {
   vendorPrice?: T;
   travelPayout?: T;
   offHoursPayout?: T;
+  workflowType?: T;
+  workflowSteps?:
+    | T
+    | {
+        stepName?: T;
+        completed?: T;
+        completedAt?: T;
+        completedBy?: T;
+        notes?: T;
+        id?: T;
+      };
   qcChecklist?:
     | T
     | {
@@ -1555,6 +1664,21 @@ export interface JobsSelect<T extends boolean = true> {
   totalPrice?: T;
   vendorCost?: T;
   margin?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  title?: T;
+  message?: T;
+  type?: T;
+  read?: T;
+  relatedJob?: T;
+  actionUrl?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -17,6 +17,7 @@ import { Technicians } from './collections/Technicians'
 import { Products } from './collections/Products'
 import { Equipment } from './collections/Equipment'
 import { Jobs } from './collections/Jobs'
+import { Notifications } from './collections/Notifications'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
@@ -84,6 +85,7 @@ export default buildConfig({
     Products,
     Equipment,
     Jobs,
+    Notifications,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

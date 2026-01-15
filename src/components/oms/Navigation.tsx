@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeContext } from '@/contexts/ThemeContext'
+import { NotificationBell } from './NotificationBell'
 
 interface NavItem {
   label: string
@@ -15,12 +16,14 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/oms', icon: '📊' },
   { label: 'Calendar', href: '/oms/calendar', icon: '📅' },
-  { label: 'Quick Create', href: '/oms/quick-create', icon: '⚡' },
+  { label: 'Quick Create', href: '/oms/quick-create', icon: '⚡', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
   { label: 'Jobs', href: '/oms/jobs', icon: '📋' },
-  { label: 'Clients', href: '/oms/clients', icon: '👥' },
-  { label: 'Technicians', href: '/oms/technicians', icon: '🔧' },
-  { label: 'Products', href: '/oms/products', icon: '📦' },
-  { label: 'Equipment', href: '/oms/equipment', icon: '🎥' },
+  { label: 'Commissions', href: '/oms/commissions', icon: '💵', roles: ['tech'] },
+  { label: 'Invoicing', href: '/oms/invoicing', icon: '💰', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
+  { label: 'Clients', href: '/oms/clients', icon: '👥', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
+  { label: 'Technicians', href: '/oms/technicians', icon: '🔧', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
+  { label: 'Products', href: '/oms/products', icon: '📦', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
+  { label: 'Equipment', href: '/oms/equipment', icon: '🎥', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
   { label: 'Reports', href: '/oms/reports', icon: '📈', roles: ['super-admin', 'sales-admin', 'ops-manager'] },
 ]
 

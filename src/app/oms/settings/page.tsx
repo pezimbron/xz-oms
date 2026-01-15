@@ -8,6 +8,8 @@ export default function SettingsPage() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle')
   const [syncMessage, setSyncMessage] = useState('')
   const [qbConnected, setQbConnected] = useState(false)
+  const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error'>('idle')
+  const [importMessage, setImportMessage] = useState('')
 
   useEffect(() => {
     const qbStatus = searchParams.get('quickbooks')
@@ -35,7 +37,7 @@ export default function SettingsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ syncAll: true }),
+        body: JSON.stringify({ syncAll: true, forceSync: true }),
       })
 
       const data = await response.json()
@@ -50,6 +52,33 @@ export default function SettingsPage() {
     } catch (error: any) {
       setSyncStatus('error')
       setSyncMessage(`Error: ${error.message}`)
+    }
+  }
+
+  const handleImportFromQuickBooks = async () => {
+    setImportStatus('importing')
+    setImportMessage('Importing customers from QuickBooks...')
+
+    try {
+      const response = await fetch('/api/quickbooks/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setImportStatus('success')
+        setImportMessage(`Successfully imported ${data.results.imported} new clients, updated ${data.results.updated} existing clients.`)
+      } else {
+        setImportStatus('error')
+        setImportMessage(data.error || 'Failed to import customers')
+      }
+    } catch (error: any) {
+      setImportStatus('error')
+      setImportMessage(`Error: ${error.message}`)
     }
   }
 
@@ -79,6 +108,18 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {importMessage && (
+            <div className={`p-4 rounded-lg ${
+              importStatus === 'success' 
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'
+                : importStatus === 'error'
+                ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
+                : 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+            }`}>
+              <p className="font-medium">{importMessage}</p>
+            </div>
+          )}
+
           {/* QuickBooks Integration */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-start justify-between mb-4">
@@ -103,7 +144,7 @@ export default function SettingsPage() {
                 </span>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button
                   onClick={handleConnectQuickBooks}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
@@ -112,13 +153,22 @@ export default function SettingsPage() {
                 </button>
 
                 {qbConnected && (
-                  <button
-                    onClick={handleSyncAllClients}
-                    disabled={syncStatus === 'syncing'}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
-                  >
-                    {syncStatus === 'syncing' ? 'Syncing...' : 'Sync All Clients'}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleImportFromQuickBooks}
+                      disabled={importStatus === 'importing'}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                    >
+                      {importStatus === 'importing' ? 'Importing...' : '⬇ Import from QuickBooks'}
+                    </button>
+                    <button
+                      onClick={handleSyncAllClients}
+                      disabled={syncStatus === 'syncing'}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                    >
+                      {syncStatus === 'syncing' ? 'Syncing...' : '⬆ Push to QuickBooks'}
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -126,8 +176,8 @@ export default function SettingsPage() {
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">How it works:</h3>
                 <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                   <li>• Click "Connect to QuickBooks" to authorize access</li>
-                  <li>• Clients are automatically synced when created or updated</li>
-                  <li>• Use "Sync All Clients" to manually sync all existing clients</li>
+                  <li>• Use "⬇ Import from QuickBooks" to pull existing customers into Payload</li>
+                  <li>• Use "⬆ Push to QuickBooks" to sync Payload clients to QuickBooks</li>
                   <li>• Check sync status in the client detail pages</li>
                 </ul>
               </div>

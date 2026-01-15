@@ -2,9 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar'
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 import '../../app/(payload)/admin/calendar/calendar.css'
+import { JobsMapView } from './JobsMapView'
+
+const DragAndDropCalendar = withDragAndDrop(Calendar)
 
 const locales = {
   'en-US': require('date-fns/locale/en-US'),
@@ -60,10 +65,30 @@ export function JobsCalendarContent() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<View>('month')
   const [date, setDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newJobDate, setNewJobDate] = useState<Date | null>(null)
+  const [clients, setClients] = useState<any[]>([])
+  const [newJobData, setNewJobData] = useState({
+    modelName: '',
+    client: '',
+    captureAddress: '',
+    city: '',
+    state: 'TX',
+    zip: '',
+  })
 
   useEffect(() => {
     fetchJobs()
+    fetchClients()
   }, [])
+
+  // Auto-select date when in Day view
+  useEffect(() => {
+    if (view === 'day') {
+      setSelectedDate(date)
+    }
+  }, [view, date])
 
   const fetchJobs = async () => {
     try {
@@ -74,6 +99,63 @@ export function JobsCalendarContent() {
       console.error('Error fetching jobs:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch('/api/clients?limit=1000')
+      const data = await response.json()
+      setClients(data.docs || [])
+    } catch (error) {
+      console.error('Error fetching clients:', error)
+    }
+  }
+
+  const handleSlotSelect = (slotInfo: { start: Date; end: Date }) => {
+    setNewJobDate(slotInfo.start)
+    setSelectedDate(slotInfo.start)
+    setShowCreateModal(true)
+  }
+
+  const handleCreateJob = async () => {
+    try {
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelName: newJobData.modelName,
+          client: parseInt(newJobData.client), // Convert to integer
+          captureAddress: newJobData.captureAddress,
+          city: newJobData.city,
+          state: newJobData.state,
+          zip: newJobData.zip,
+          targetDate: newJobDate?.toISOString(),
+          status: 'scheduled',
+        }),
+      })
+
+      if (response.ok) {
+        setShowCreateModal(false)
+        setNewJobData({
+          modelName: '',
+          client: '',
+          captureAddress: '',
+          city: '',
+          state: 'TX',
+          zip: '',
+        })
+        await fetchJobs()
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to create job:', errorData)
+        alert('Failed to create job. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error creating job:', error)
+      alert('Error creating job. Please try again.')
     }
   }
 
@@ -115,6 +197,37 @@ export function JobsCalendarContent() {
 
   const handleSelectEvent = (event: CalendarEvent) => {
     window.location.href = `/oms/jobs/${event.resource.id}`
+  }
+
+  const handleEventDrop = async ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
+    try {
+      // Update the job's target date
+      const response = await fetch(`/api/jobs/${event.resource.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetDate: start.toISOString(),
+        }),
+      })
+
+      if (response.ok) {
+        // Refresh jobs to show updated calendar
+        await fetchJobs()
+      } else {
+        console.error('Failed to update job date')
+        alert('Failed to reschedule job. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error updating job:', error)
+      alert('Error rescheduling job. Please try again.')
+    }
+  }
+
+  const handleEventResize = async ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
+    // For now, just update the start time (target date)
+    await handleEventDrop({ event, start, end })
   }
 
   if (loading) {
@@ -205,7 +318,7 @@ export function JobsCalendarContent() {
       {/* Calendar Card */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-6" style={{ height: '750px' }}>
-          <Calendar
+          <DragAndDropCalendar
             localizer={localizer}
             events={events}
             startAccessor="start"
@@ -213,6 +326,11 @@ export function JobsCalendarContent() {
             style={{ height: '100%' }}
             eventPropGetter={eventStyleGetter}
             onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSlotSelect}
+            onEventDrop={handleEventDrop}
+            onEventResize={handleEventResize}
+            resizable
+            selectable
             view={view}
             onView={setView}
             date={date}
@@ -226,6 +344,9 @@ export function JobsCalendarContent() {
           />
         </div>
       </div>
+
+      {/* Map View */}
+      <JobsMapView selectedDate={selectedDate} jobs={jobs} />
 
       {/* Help Section */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 shadow-lg">
@@ -259,6 +380,132 @@ export function JobsCalendarContent() {
           </div>
         </div>
       </div>
+
+      {/* Create Job Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Create New Job
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Scheduled for: {newJobDate?.toLocaleString()}
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Model Name *
+                </label>
+                <input
+                  type="text"
+                  value={newJobData.modelName}
+                  onChange={(e) => setNewJobData({ ...newJobData, modelName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="e.g., Office Building"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Client *
+                </label>
+                <select
+                  value={newJobData.client}
+                  onChange={(e) => setNewJobData({ ...newJobData, client: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Select a client...</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  value={newJobData.captureAddress}
+                  onChange={(e) => setNewJobData({ ...newJobData, captureAddress: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="123 Main St"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={newJobData.city}
+                    onChange={(e) => setNewJobData({ ...newJobData, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Austin"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={newJobData.state}
+                    onChange={(e) => setNewJobData({ ...newJobData, state: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="TX"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  ZIP Code
+                </label>
+                <input
+                  type="text"
+                  value={newJobData.zip}
+                  onChange={(e) => setNewJobData({ ...newJobData, zip: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="78701"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleCreateJob}
+                disabled={!newJobData.modelName || !newJobData.client}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+              >
+                Create Job
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setNewJobData({
+                    modelName: '',
+                    client: '',
+                    captureAddress: '',
+                    city: '',
+                    state: 'TX',
+                    zip: '',
+                  })
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

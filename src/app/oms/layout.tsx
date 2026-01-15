@@ -2,6 +2,7 @@
 
 import './globals.css'
 import { Navigation } from '@/components/oms/Navigation'
+import { NotificationBell } from '@/components/oms/NotificationBell'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
 export default function OMSLayout({ children }: { children: React.ReactNode }) {
@@ -16,9 +17,17 @@ export default function OMSLayout({ children }: { children: React.ReactNode }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto">
-              {children}
-            </main>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Top Bar with Notifications */}
+              <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex justify-end items-center">
+                <NotificationBell />
+              </div>
+              
+              {/* Page Content */}
+              <main className="flex-1 overflow-auto">
+                {children}
+              </main>
+            </div>
           </div>
         </ThemeProvider>
       </body>

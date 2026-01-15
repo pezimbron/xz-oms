@@ -61,8 +61,9 @@ export const Jobs: CollectionConfig = {
       name: 'status',
       type: 'select',
       required: true,
-      defaultValue: 'scheduled',
+      defaultValue: 'request',
       options: [
+        { label: 'Request', value: 'request' },
         { label: 'Scheduled', value: 'scheduled' },
         { label: 'Scanned', value: 'scanned' },
         { label: 'QC', value: 'qc' },
@@ -279,6 +280,61 @@ export const Jobs: CollectionConfig = {
       name: 'offHoursPayout',
       type: 'number',
       label: 'Off-Hours Payout',
+    },
+    {
+      name: 'workflowType',
+      type: 'select',
+      label: 'Workflow Type',
+      admin: {
+        description: 'The workflow process for this job. Defaults to client\'s default workflow but can be overridden.',
+      },
+      options: [
+        { label: 'Outsourced: Scan & Upload to Client', value: 'outsourced-scan-upload-client' },
+        { label: 'Outsourced: Scan & Transfer', value: 'outsourced-scan-transfer' },
+        { label: 'Outsourced: Scan, Survey & Images', value: 'outsourced-scan-survey-images' },
+        { label: 'Direct: Scan Hosted by Us', value: 'direct-scan-hosted' },
+        { label: 'Direct: Scan & Transfer', value: 'direct-scan-transfer' },
+        { label: 'Direct: Scan + Floor Plan', value: 'direct-scan-floorplan' },
+        { label: 'Direct: Scan + Floor Plan + Photos', value: 'direct-scan-floorplan-photos' },
+        { label: 'Direct: Scan + As-Builts', value: 'direct-scan-asbuilts' },
+      ],
+    },
+    {
+      name: 'workflowSteps',
+      type: 'array',
+      label: 'Workflow Progress',
+      admin: {
+        description: 'Track completion of workflow steps',
+      },
+      fields: [
+        {
+          name: 'stepName',
+          type: 'text',
+          required: true,
+        },
+        {
+          name: 'completed',
+          type: 'checkbox',
+          defaultValue: false,
+        },
+        {
+          name: 'completedAt',
+          type: 'date',
+          admin: {
+            date: {
+              pickerAppearance: 'dayAndTime',
+            },
+          },
+        },
+        {
+          name: 'completedBy',
+          type: 'text',
+        },
+        {
+          name: 'notes',
+          type: 'textarea',
+        },
+      ],
     },
     {
       name: 'qcChecklist',

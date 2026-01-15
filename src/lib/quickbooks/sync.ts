@@ -75,21 +75,32 @@ export async function syncClientToQuickBooks(payload: Payload, client: Client) {
     }
 
     // Update client with QuickBooks ID and sync status
-    await payload.update({
-      collection: 'clients',
-      id: client.id,
-      data: {
-        integrations: {
-          ...client.integrations,
-          quickbooks: {
-            customerId: qbId,
-            syncStatus: 'synced',
-            lastSyncedAt: new Date().toISOString(),
-            syncError: '',
+    try {
+      const updateResult = await payload.update({
+        collection: 'clients',
+        id: client.id,
+        data: {
+          integrations: {
+            quickbooks: {
+              customerId: qbId,
+              syncStatus: 'synced',
+              lastSyncedAt: new Date().toISOString(),
+              syncError: '',
+            },
+            hubspot: client.integrations?.hubspot || {
+              contactId: '',
+              syncStatus: 'not-synced',
+              lastSyncedAt: '',
+              syncError: '',
+            },
           },
-        },
-      },
-    })
+        } as any,
+      })
+      console.log('Database update successful for client:', client.name, 'QB ID:', qbId)
+    } catch (dbError: any) {
+      console.error('Failed to update database:', dbError.message)
+      throw new Error(`QuickBooks sync succeeded but database update failed: ${dbError.message}`)
+    }
 
     return { success: true, customerId: qbId }
   } catch (error: any) {
