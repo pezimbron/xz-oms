@@ -175,9 +175,9 @@ export default function SettingsPage() {
               <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">How it works:</h3>
                 <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <li>• Click "Connect to QuickBooks" to authorize access</li>
-                  <li>• Use "⬇ Import from QuickBooks" to pull existing customers into Payload</li>
-                  <li>• Use "⬆ Push to QuickBooks" to sync Payload clients to QuickBooks</li>
+                  <li>• Click &quot;Connect to QuickBooks&quot; to authorize access</li>
+                  <li>• Use &quot;⬇ Import from QuickBooks&quot; to pull existing customers into Payload</li>
+                  <li>• Use &quot;⬆ Push to QuickBooks&quot; to sync Payload clients to QuickBooks</li>
                   <li>• Check sync status in the client detail pages</li>
                 </ul>
               </div>

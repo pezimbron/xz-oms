@@ -238,7 +238,7 @@ export default function JobCompletionForm() {
                 >
                   <option value="">Select a reason...</option>
                   <option value="no-access">Not able to access location</option>
-                  <option value="poc-no-show">POC didn't show up</option>
+                  <option value="poc-no-show">POC didn&apos;t show up</option>
                   <option value="poc-reschedule">POC asked to reschedule</option>
                   <option value="other">Other</option>
                 </select>

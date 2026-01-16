@@ -254,7 +254,7 @@ export default function InvoicingPage() {
                 No jobs ready to invoice
               </p>
               <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
-                Completed jobs will appear here when they're ready to be invoiced
+                Completed jobs will appear here when they&apos;re ready to be invoiced
               </p>
             </div>
           ) : filter === 'all' ? (

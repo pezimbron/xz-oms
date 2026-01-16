@@ -279,7 +279,7 @@ export default function JobDetailPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Job Not Found</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">The job you're looking for doesn't exist.</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">The job you&apos;re looking for doesn&apos;t exist.</p>
           <Link href="/oms/jobs" className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
             ← Back to Jobs
           </Link>
@@ -979,7 +979,7 @@ export default function JobDetailPage() {
                     </div>
                   ))}
                   {(!editedJob?.lineItems || editedJob.lineItems.length === 0) && (
-                    <p className="text-gray-400 italic text-center py-4">No products added yet. Click "Add Product" to get started.</p>
+                    <p className="text-gray-400 italic text-center py-4">No products added yet. Click &quot;Add Product&quot; to get started.</p>
                   )}
                 </div>
               ) : (

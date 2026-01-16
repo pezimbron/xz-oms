@@ -58,7 +58,7 @@ export default function OMSDashboard() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e7eb', padding: '24px 32px' }}>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white" style={{ fontSize: '30px', fontWeight: 'bold', color: '#111827', marginBottom: '4px' }}>Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1" style={{ color: '#6b7280', fontSize: '14px' }}>Welcome back! Here's your overview.</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1" style={{ color: '#6b7280', fontSize: '14px' }}>Welcome back! Here&apos;s your overview.</p>
       </div>
 
       {/* Main Content */}
@@ -113,7 +113,7 @@ export default function OMSDashboard() {
                 <span className="text-2xl">📅</span>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Today's Jobs</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Today&apos;s Jobs</p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white">
                   {loading ? '...' : stats.todayJobs}
                 </p>
