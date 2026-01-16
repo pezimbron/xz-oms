@@ -115,7 +115,8 @@ export const seed = async ({
       data: {
         name: 'Demo Author',
         email: 'demo-author@payloadcms.com',
-        password: 'password'
+        password: 'password',
+        role: 'super-admin'
       }
     })
 
